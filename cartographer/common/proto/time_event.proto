@@ -1,0 +1,59 @@
+
+// Copyright 2016 The Cartographer Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+package cartographer.common.proto;
+
+message TimeEvent
+{
+
+        /// Identifying string for this time stamped data topic
+        /// something like "/opticaltracker/00000000/frame" where
+        /// 00000000 is the serial number of the optical tracker.
+        optional string             event_name = 1;
+
+        /// The time just before a data update request is made
+        optional int64    local_request_time = 2;
+
+        /// Identifying string for the clock used to drive the device
+        /// something like "/opticaltracker/00000000/clock"
+        /// if it is the clock internal to a sensor like an optical tracker
+        optional string             device_clock_id = 3;
+
+        /// The time provided by the device specified by device_clock_id
+        optional int64    device_time = 4;
+
+        /// Identifying string for the clock used to drive the device
+        /// or "/control_computer/clock/steady" if the device has no clock
+        /// and the time is the desktop computer
+        /// running the steady clock (vs clocks which might change time)
+        optional string              local_clock_id = 5;
+
+        /// The time at which the data was received
+        optional int64     local_receive_time = 6;
+
+        /// The corrected local time which represents when the sensor
+        /// data was actually captured.
+        optional int64     corrected_local_time = 7;
+
+        /// Estimated duration of the skew between the device clock
+        /// and the local time clock
+        optional sint64 clock_skew = 8;
+
+        /// The minimum expected delay in transporting the data request
+        optional int64 min_transport_delay = 9;
+
+};

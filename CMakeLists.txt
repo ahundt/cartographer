@@ -71,8 +71,9 @@ foreach(ABS_FIL ${ALL_PROTOS})
   add_custom_command(
     OUTPUT "${PROJECT_BINARY_DIR}/${DIR}/${FIL_WE}.pb.cc"
            "${PROJECT_BINARY_DIR}/${DIR}/${FIL_WE}.pb.h"
+           "${PROJECT_BINARY_DIR}/${DIR}/${FIL_WE}_pb2.py"
     COMMAND  ${PROTOBUF_PROTOC_EXECUTABLE}
-    ARGS --cpp_out  ${PROJECT_BINARY_DIR} -I
+    ARGS --cpp_out  ${PROJECT_BINARY_DIR} --python_out ${PROJECT_BINARY_DIR} -I
       ${PROJECT_SOURCE_DIR} ${ABS_FIL}
     DEPENDS ${ABS_FIL}
     COMMENT "Running C++ protocol buffer compiler on ${ABS_FIL}"

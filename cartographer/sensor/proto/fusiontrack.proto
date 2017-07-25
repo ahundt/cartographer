@@ -1,0 +1,148 @@
+// Copyright 2016 The Cartographer Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+package cartographer.sensor.proto;
+
+option java_outer_classname = "Sensor";
+
+import "cartographer/common/proto/time_event.proto";
+import "cartographer/transform/proto/transform.proto";
+
+message ftkGeometry {
+    optional string name = 1;
+    optional uint32 geometryID = 2;
+    optional uint32 version = 3;
+    repeated cartographer.transform.proto.Vector3d positions = 4;
+}
+
+message ftkMarker {
+    optional string name = 1;
+    optional uint32 id = 2;
+    optional uint32 geometryID = 3;
+    repeated uint32 geometryPresenceMask = 4;
+    optional cartographer.transform.proto.Rigid3d transform = 5;
+}
+
+
+message ftk3DFiducial {
+    optional string markerName = 1;
+    optional uint32 leftIndex = 2;
+    optional uint32 rightIndex = 3;
+    optional cartographer.transform.proto.Vector3d position = 4;
+    optional double epipolarErrorPixels = 5;
+    optional double triangulationError = 6;
+    optional double probability = 7;
+}
+
+// aka ftkRawData
+message ftkRegionOfInterest
+{
+    optional double centerXPixels = 1; /*!< Horizontal position of the center of the
+                            * fiducial in image reference (unit pixels) */
+    optional double centerYPixels = 2; /*!< Vertical position of the center of the fiducial
+                            * in image reference (unit pixels)  */
+    optional uint32 RightEdge  = 3; /*!< Contains 1 if the blob touches the right
+                           *    edge of the picture */
+    optional uint32 BottomEdge = 4; /*!< Contains 1 if the blob touches the
+                           *    bottom edge of the picture. */
+    optional uint32 LeftEdge   = 5; /*!< Contains 1 if the blob touches the left
+                           *    edge of the picture. */
+    optional uint32 TopEdge    = 6; /*!< Contains 1 if the blob touches the top
+                           *    edge of the picture. */
+    optional uint32 pixelsCount = 7; /*!< Contain the surface of pixels composing the
+                         * fiducial (unit pixels^2) */
+    optional double probability = 8; /*!< Use the aspect ratio of the fiducial to define a
+                          * probability (range 0..1) of being a valid fiducial
+                          * */
+}
+
+enum ftkQueryStatus {
+    
+    QS_OK = 0; /*!< This field is initialised correctly */
+    QS_ERR_OVERFLOW = 1; /*!< This field is initialised correctly, data are
+                          * missing because buffer size is too small */
+    QS_ERR_INVALID_RESERVED_SIZE = 2; /*!< The reserved size is not a multiple
+                                       * of the type's size */
+    QS_REPROCESS = 10; /*!< This field is requested to be reprocessed */
+
+    QS_WAR_SKIPPED = -1; /*!< This field is not initialised */
+}
+
+
+/*! \brief Type of device connected
+ *   \see ftkDeviceEnumCallback
+ */
+enum ftkDeviceType
+{
+    DEV_SIMULATOR = 0; /*!< Internal use only */
+    DEV_INFINITRACK = 1; /*!< Device is an infiniTrack */
+    DEV_FUSIONTRACK_500 = 2; /*!< Device is a fusionTrack 500 */
+    DEV_FUSIONTRACK_250 = 3; /*!< Device is a fusionTrack 250 */
+    DEV_UNKNOWN_DEVICE = 127; /**< Unknown device type. */
+}
+
+
+message FusionTrackFrame {
+
+    optional uint64 serialNumber = 1;
+    optional uint64 hardwareTimestampUS = 2; /*!< Timestamp of the image in micro-seconds */
+    optional uint64 desynchroUS = 3; /*!< Desynchronisation between left and right frames
+                         * (infiniTrack only, 0 otherwise) */
+    optional uint32 counter = 4; /*!< Image counter */
+    optional uint32 format = 5; /*!< Pixel format */
+    optional uint32 width = 6; /*!< Image width (in pixels) */
+    optional uint32 height = 7; /*!< Image height (in pixels) */
+    optional int32 imageStrideInBytes = 8; /*!< Image width * size of pixel + padding in
+                               * bytes */
+    optional uint32 imageHeaderVersion = 9;
+    optional ftkQueryStatus imageHeaderStatus = 10;
+
+    optional bytes imageRightPixels = 11;
+    optional uint32 imageRightPixelsVersion = 12;
+    optional ftkQueryStatus imageRightStatus = 13;
+
+    optional bytes imageLeftPixels = 14;
+    optional uint32 imageLeftPixelsVersion = 15;
+    optional ftkQueryStatus imageLeftStatus = 16;
+
+    repeated ftkRegionOfInterest regionsOfInterestLeft = 17;
+    optional uint32 regionsOfInterestLeftVersion = 18;
+    optional ftkQueryStatus regionsOfInterestLeftStatus = 19;
+
+    repeated ftkRegionOfInterest regionsOfInterestRight = 20;
+    optional uint32 regionsOfInterestRightVersion = 21;
+    optional ftkQueryStatus regionsOfInterestRightStatus = 22;
+
+    repeated ftk3DFiducial threeDFiducials = 23;
+    optional uint32 threeDFiducialsVersion = 24;
+    optional ftkQueryStatus threeDFiducialsStatus = 25;
+
+    repeated ftkMarker markers = 26;
+    optional uint32 markersVersion = 27;
+    optional ftkQueryStatus markersStatus = 28;
+
+    optional ftkDeviceType deviceType = 29;
+    optional cartographer.common.proto.TimeEvent timestamp = 30; 
+    optional sint64 ftkError = 31;    
+}
+
+
+message FusionTrackLog {
+    repeated ftkGeometry geometries = 1;
+    optional cartographer.common.proto.TimeEvent startTime = 2;
+    optional cartographer.common.proto.TimeEvent stopTime = 3;
+    repeated FusionTrackFrame frames = 4;
+}
