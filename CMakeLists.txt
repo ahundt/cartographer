@@ -31,6 +31,19 @@ find_package(Ceres REQUIRED COMPONENTS SparseLinearAlgebraLibrary)
 find_package(Eigen3 REQUIRED)
 find_package(LuaGoogle REQUIRED)
 find_package(Protobuf REQUIRED)
+find_package(FlatBuffers)
+
+# flatbuffers settings
+if(FLATBUFFERS_FOUND)
+  if(FLATBUFFERS_FLATC_EXECUTABLE)
+    set(FLATC_TARGET "")
+    set(FLATC ${FLATBUFFERS_FLATC_EXECUTABLE})
+  else()
+    set(FLATC_TARGET flatc)
+    set(FLATC flatc)
+  endif()
+  set(FLATC_SCHEMA_ARGS --gen-mutable)
+endif()
 
 include(FindPkgConfig)
 PKG_SEARCH_MODULE(CAIRO REQUIRED cairo>=1.12.16)
@@ -79,10 +92,47 @@ foreach(ABS_FIL ${ALL_PROTOS})
     COMMENT "Running C++ protocol buffer compiler on ${ABS_FIL}"
     VERBATIM
   )
+
+  if(FLATBUFFERS_FOUND)
+    set(GENERATED_FBS "${PROJECT_BINARY_DIR}/${DIR}/${FIL_WE}.fbs")
+    list(APPEND ALL_FBS_FILES ${GENERATED_FBS})
+
+    set(GENERATED_INCLUDE_FILE "${PROJECT_BINARY_DIR}/${DIR}/${FIL_WE}_generated.h")
+    list(APPEND ALL_FBS_HDRS ${GENERATED_INCLUDE_FILE})
+    add_custom_command(
+      OUTPUT ${GENERATED_FBS}
+      COMMAND ${FLATC} --escape-proto-ids
+      -o "${PROJECT_BINARY_DIR}/${DIR}/"
+      -I ${PROJECT_SOURCE_DIR}
+      --proto ${ABS_FIL}
+      DEPENDS ${ABS_FIL} "${PROJECT_BINARY_DIR}/${DIR}/${FIL_WE}.pb.h")
+
+    add_custom_command(
+      OUTPUT ${GENERATED_INCLUDE_FILE}
+      COMMAND ${FLATC} --gen-object-api --gen-mutable
+      -o "${PROJECT_BINARY_DIR}/${DIR}/"
+      -I ${PROJECT_SOURCE_DIR}
+      -c ${GENERATED_FBS}
+      DEPENDS ${FLATC_TARGET} ${ABS_FIL} ${GENERATED_FBS})
+
+    set(GENERATED_PY_FILE "${PROJECT_BINARY_DIR}/${DIR}/${FIL_WE}.py")
+    add_custom_command(
+      OUTPUT ${GENERATED_PY_FILE}
+      COMMAND ${FLATC} --gen-object-api --gen-mutable
+      -o "${PROJECT_BINARY_DIR}/"
+      -I ${PROJECT_SOURCE_DIR}
+      -p ${GENERATED_FBS}
+      DEPENDS ${FLATC_TARGET} ${ABS_FIL} ${GENERATED_FBS})
+    list(APPEND ALL_FBS_PY ${GENERATED_PY_FILE})
+  endif()
 endforeach()
 
+if(FLATBUFFERS_FOUND)
+  add_custom_target(flatbuffers DEPENDS ${GENERATED_FBS})
+  add_custom_target(flatbuffers_generated_headers DEPENDS flatbuffers ${ALL_FBS_HDRS} ${ALL_FBS_PY})
+endif()
 set_source_files_properties(${ALL_PROTO_SRCS} ${ALL_PROTO_HDRS} PROPERTIES GENERATED TRUE)
-list(APPEND ALL_SRCS ${ALL_PROTO_SRCS} ${ALL_PROTO_HDRS})
+list(APPEND ALL_SRCS ${ALL_PROTO_SRCS} ${ALL_PROTO_HDRS} ${ALL_FBS_FILES} ${ALL_FBS_HDRS} ${ALL_FBS_PY})
 
 add_library(${PROJECT_NAME} ${ALL_SRCS})
 
